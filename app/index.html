@@ -1,0 +1,2477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="description" content="药's话 Pills Talk — AI 用药安全助手，帮老人读懂药盒上的那行字。TRAE AI 创造力大赛参赛作品。">
+<meta name="theme-color" content="#e8785a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>药's话 — 让每盒药都有人解释</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    /* Warm color palette */
+    --warm-bg: #fef7f0;
+    --warm-bg-soft: #fdf2e9;
+    --warm-card: #ffffff;
+    --warm-card-glass: rgba(255, 255, 255, 0.72);
+    --warm-accent: #e8785a;
+    --warm-accent-deep: #d45a3a;
+    --warm-accent-light: #fde8e0;
+    --warm-accent-glow: rgba(232, 120, 90, 0.25);
+    --coral: #ff8a65;
+    --amber: #f4a261;
+
+    --text-primary: #2d2420;
+    --text-secondary: #7a6e65;
+    --text-light: #a89e95;
+
+    --success: #5a9e6f;
+    --success-bg: #e8f5ee;
+    --warning: #d4a843;
+    --warning-bg: #fff8e5;
+    --danger: #c95d4e;
+    --danger-bg: #fde8e5;
+    --info: #5a9ec9;
+    --info-bg: #e6f2fa;
+
+    --border: #f0e8e0;
+    --border-soft: #f7f0e8;
+
+    --shadow-sm: 0 2px 8px rgba(180, 120, 90, 0.06);
+    --shadow: 0 8px 28px rgba(180, 120, 90, 0.10);
+    --shadow-lg: 0 16px 48px rgba(180, 120, 90, 0.16);
+    --shadow-glow: 0 8px 32px var(--warm-accent-glow);
+
+    --radius-sm: 10px;
+    --radius: 18px;
+    --radius-lg: 24px;
+    --radius-pill: 50px;
+
+    --font-scale: 1;
+    --font-base: calc(16px * var(--font-scale));
+    --font-stack: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+    --mono-stack: "SF Mono", "JetBrains Mono", "Fira Code", Consolas, monospace;
+
+    --header-grad: linear-gradient(135deg, #ff9a76 0%, #e8785a 45%, #d45a3a 100%);
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  html { font-size: var(--font-base); scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-stack);
+    background: var(--warm-bg);
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(232, 120, 90, 0.08) 0%, transparent 35%),
+      radial-gradient(circle at 88% 92%, rgba(244, 162, 97, 0.07) 0%, transparent 38%);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    line-height: 1.75;
+    overflow-x: hidden;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ====== Header ====== */
+  .header {
+    position: relative;
+    background: var(--header-grad);
+    color: #fff;
+    padding: 56px 20px 64px;
+    text-align: center;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.18) 0, transparent 2px),
+      radial-gradient(circle at 70% 60%, rgba(255,255,255,0.12) 0, transparent 2px),
+      radial-gradient(circle at 40% 80%, rgba(255,255,255,0.15) 0, transparent 2px);
+    background-size: 60px 60px, 80px 80px, 50px 50px;
+    animation: drift 30s linear infinite;
+    z-index: -1;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 40px;
+    background: linear-gradient(to bottom, transparent, var(--warm-bg));
+    z-index: 1;
+  }
+  @keyframes drift {
+    from { transform: translate(0,0); }
+    to { transform: translate(-60px, -60px); }
+  }
+
+  .header-top {
+    position: absolute;
+    top: 16px; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 3;
+  }
+  .trae-badge {
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    font-size: 0.72em;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .font-toggle {
+    display: flex;
+    gap: 4px;
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: var(--radius-pill);
+    padding: 4px;
+  }
+  .font-toggle button {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    transition: all 0.25s var(--ease);
+    line-height: 1;
+  }
+  .font-toggle button:hover { background: rgba(255,255,255,0.2); }
+  .font-toggle button.active {
+    background: #fff;
+    color: var(--warm-accent-deep);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .font-toggle .fs-a { font-size: 0.85em; }
+  .font-toggle .fs-ap { font-size: 1em; }
+  .font-toggle .fs-app { font-size: 1.15em; }
+
+  .header-inner { position: relative; z-index: 2; max-width: 720px; margin: 0 auto; }
+  .app-icon {
+    width: 76px; height: 76px;
+    margin: 0 auto 16px;
+    background: rgba(255,255,255,0.22);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4em;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .header h1 {
+    font-size: 2.6em;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  }
+  .header h1 .en {
+    display: block;
+    font-size: 0.32em;
+    font-weight: 500;
+    opacity: 0.85;
+    letter-spacing: 4px;
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+  .header p {
+    font-size: 1.1em;
+    opacity: 0.96;
+    max-width: 520px;
+    margin: 12px auto 0;
+    line-height: 1.7;
+  }
+
+  /* ====== Stats Bar ====== */
+  .stats-bar {
+    background: var(--warm-card-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: var(--radius-lg);
+    margin: -40px auto 0;
+    max-width: 880px;
+    padding: 24px 28px;
+    box-shadow: var(--shadow);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 16px;
+    position: relative;
+    z-index: 5;
+  }
+  .stat-item {
+    text-align: center;
+    padding: 10px 8px;
+    border-radius: var(--radius-sm);
+    transition: all 0.3s var(--ease);
+    cursor: default;
+  }
+  .stat-item:hover {
+    background: var(--warm-accent-light);
+    transform: translateY(-3px);
+  }
+  .stat-icon { font-size: 1.4em; margin-bottom: 4px; display: block; }
+  .stat-num {
+    font-size: 1.7em;
+    font-weight: 800;
+    color: var(--warm-accent);
+    line-height: 1.1;
+    background: linear-gradient(135deg, var(--warm-accent), var(--warm-accent-deep));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-label {
+    font-size: 0.82em;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  /* ====== Main App ====== */
+  .app-container {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  /* ====== Tabs ====== */
+  .tab-nav {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    padding: 6px;
+    background: var(--warm-card-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-soft);
+  }
+  .tab-btn {
+    flex: 1 1 auto;
+    min-width: 92px;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    font-size: 0.92em;
+    color: var(--text-secondary);
+    transition: all 0.35s var(--ease-bounce);
+    font-weight: 600;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .tab-btn .tab-icon { font-size: 1.1em; }
+  .tab-btn:hover { color: var(--warm-accent); background: var(--warm-accent-light); }
+  .tab-btn.active {
+    background: linear-gradient(135deg, var(--warm-accent) 0%, var(--warm-accent-deep) 100%);
+    color: #fff;
+    box-shadow: 0 6px 18px var(--warm-accent-glow);
+    transform: translateY(-1px);
+  }
+
+  .tab-panel { display: none; animation: fadeInUp 0.45s var(--ease); }
+  .tab-panel.active { display: block; }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ====== Cards ====== */
+  .card {
+    background: var(--warm-card-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  }
+  .card:hover { box-shadow: var(--shadow-lg); }
+  .card h2 {
+    font-size: 1.3em;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-primary);
+  }
+  .card h2 .icon {
+    font-size: 1.3em;
+    width: 38px; height: 38px;
+    background: var(--warm-accent-light);
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card-desc {
+    color: var(--text-secondary);
+    margin-bottom: 18px;
+    font-size: 0.96em;
+    line-height: 1.7;
+  }
+
+  /* ====== Search Box ====== */
+  .search-box {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .search-box input {
+    flex: 1;
+    padding: 14px 22px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-pill);
+    font-size: 1.05em;
+    outline: none;
+    transition: all 0.3s var(--ease);
+    background: #fff;
+    font-family: inherit;
+    color: var(--text-primary);
+  }
+  .search-box input:focus {
+    border-color: var(--warm-accent);
+    box-shadow: 0 0 0 4px var(--warm-accent-glow);
+  }
+  .btn-primary {
+    padding: 14px 28px;
+    background: linear-gradient(135deg, var(--warm-accent) 0%, var(--warm-accent-deep) 100%);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-pill);
+    font-size: 1em;
+    cursor: pointer;
+    font-weight: 700;
+    font-family: inherit;
+    transition: all 0.25s var(--ease);
+    box-shadow: 0 6px 16px var(--warm-accent-glow);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 24px var(--warm-accent-glow); }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* ====== Drug Tags ====== */
+  .drug-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .drug-tag {
+    padding: 8px 16px;
+    background: var(--warm-accent-light);
+    color: var(--warm-accent-deep);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    font-size: 0.9em;
+    border: 2px solid transparent;
+    transition: all 0.25s var(--ease);
+    font-weight: 500;
+    user-select: none;
+  }
+  .drug-tag:hover {
+    border-color: var(--warm-accent);
+    transform: translateY(-2px);
+  }
+  .drug-tag.selected {
+    background: linear-gradient(135deg, var(--warm-accent), var(--warm-accent-deep));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 12px var(--warm-accent-glow);
+  }
+
+  /* ====== Result Box ====== */
+  .result-box {
+    background: linear-gradient(135deg, #fff8f5 0%, #fff 100%);
+    border: 1px solid var(--warm-accent-light);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-top: 16px;
+    display: none;
+    position: relative;
+  }
+  .result-box.show { display: block; animation: scaleIn 0.45s var(--ease); }
+  .result-box .drug-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .result-box .drug-name {
+    font-size: 1.55em;
+    font-weight: 800;
+    color: var(--warm-accent-deep);
+    margin-bottom: 4px;
+  }
+  .result-box .drug-category {
+    font-size: 0.85em;
+    color: var(--text-light);
+  }
+  .fav-btn {
+    background: var(--warm-card);
+    border: 2px solid var(--border);
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s var(--ease-bounce);
+    flex-shrink: 0;
+  }
+  .fav-btn:hover { transform: scale(1.15); border-color: var(--warm-accent); }
+  .fav-btn.active {
+    background: #fff3cd;
+    border-color: var(--warning);
+    animation: pop 0.4s var(--ease-bounce);
+  }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
+  .result-section {
+    margin-bottom: 14px;
+    padding: 14px 16px;
+    background: #fff;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--warm-accent-light);
+    transition: border-color 0.3s;
+  }
+  .result-section:hover { border-left-color: var(--warm-accent); }
+  .result-section h3 {
+    font-size: 0.82em;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 700;
+  }
+  .result-section p {
+    font-size: 1.04em;
+    line-height: 1.85;
+    color: var(--text-primary);
+  }
+  .highlight {
+    background: linear-gradient(180deg, transparent 55%, #ffe08a 55%);
+    padding: 0 4px;
+    font-weight: 700;
+    border-radius: 2px;
+  }
+
+  /* ====== Interaction Result ====== */
+  .interaction-item {
+    padding: 16px 18px;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    animation: fadeInUp 0.4s var(--ease);
+    border: 1px solid transparent;
+  }
+  .interaction-item.safe { background: var(--success-bg); border-left: 4px solid var(--success); }
+  .interaction-item.warning { background: var(--warning-bg); border-left: 4px solid var(--warning); }
+  .interaction-item.danger {
+    background: var(--danger-bg);
+    border-left: 4px solid var(--danger);
+    box-shadow: 0 4px 16px rgba(201, 93, 78, 0.15);
+  }
+  .interaction-icon { font-size: 1.7em; flex-shrink: 0; line-height: 1; }
+  .interaction-content h4 { font-size: 1.02em; margin-bottom: 4px; font-weight: 700; }
+  .interaction-content p { font-size: 0.94em; color: var(--text-secondary); line-height: 1.7; }
+
+  /* ====== Chat History ====== */
+  .chat-messages {
+    max-height: 420px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .chat-msg {
+    margin-bottom: 14px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    max-width: 86%;
+    animation: fadeInUp 0.35s var(--ease);
+    line-height: 1.7;
+    word-wrap: break-word;
+  }
+  .chat-msg.user {
+    background: linear-gradient(135deg, var(--warm-accent), var(--warm-accent-deep));
+    color: #fff;
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 4px 12px var(--warm-accent-glow);
+  }
+  .chat-msg.ai {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .chat-msg .msg-role {
+    font-size: 0.72em;
+    opacity: 0.7;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .chat-msg .msg-time {
+    font-size: 0.7em;
+    opacity: 0.6;
+    margin-top: 4px;
+    text-align: right;
+  }
+
+  /* ====== MCP Panel ====== */
+  .mcp-panel {
+    position: fixed;
+    top: 0; right: -440px;
+    width: 420px;
+    max-width: 100%;
+    height: 100vh;
+    background: linear-gradient(180deg, #1a1512 0%, #221b16 100%);
+    color: #c9bfb5;
+    z-index: 200;
+    transition: right 0.45s var(--ease);
+    overflow-y: auto;
+    font-family: var(--mono-stack);
+    font-size: 0.82em;
+    box-shadow: -16px 0 48px rgba(0,0,0,0.3);
+  }
+  .mcp-panel.open { right: 0; }
+  .mcp-panel-header {
+    position: sticky;
+    top: 0;
+    background: rgba(26, 21, 18, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 18px 22px;
+    border-bottom: 1px solid #332a24;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 2;
+  }
+  .mcp-panel-header h3 {
+    color: var(--warm-accent);
+    font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mcp-panel-header .live-dot {
+    width: 8px; height: 8px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 8px var(--success);
+  }
+  .mcp-close {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid #332a24;
+    color: #888;
+    font-size: 1.1em;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .mcp-close:hover { color: #fff; background: rgba(255,255,255,0.1); }
+  .mcp-content { padding: 18px 20px 40px; }
+  .mcp-empty {
+    color: #555;
+    text-align: center;
+    padding: 60px 0;
+    line-height: 2;
+  }
+  .mcp-empty .empty-icon { font-size: 2.4em; opacity: 0.4; display: block; margin-bottom: 12px; }
+
+  .mcp-step {
+    margin-bottom: 14px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    border-left: 3px solid #444;
+    animation: slideIn 0.35s var(--ease);
+    position: relative;
+  }
+  .mcp-step::before {
+    content: '';
+    position: absolute;
+    left: -3px; top: 0; bottom: 0;
+    width: 3px;
+    background: inherit;
+    border-radius: 3px;
+  }
+  .mcp-step.tool-call { border-left-color: #5a9ec9; background: rgba(90, 158, 201, 0.06); }
+  .mcp-step.tool-result { border-left-color: #5a9e6f; background: rgba(90, 158, 111, 0.06); }
+  .mcp-step.thinking { border-left-color: #d4a843; background: rgba(212, 168, 67, 0.06); }
+  .mcp-step.system { border-left-color: #a89e95; }
+  .mcp-step .step-label {
+    font-size: 0.72em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+  }
+  .mcp-step .step-time {
+    margin-left: auto;
+    color: #555;
+    font-size: 0.9em;
+  }
+  .mcp-step code {
+    color: #e8d5c4;
+    font-size: 0.86em;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.6;
+    display: block;
+  }
+  .mcp-step .tok-key { color: #5a9ec9; }
+  .mcp-step .tok-str { color: #a8d4a0; }
+  .mcp-step .tok-num { color: #e8a87c; }
+  .mcp-step .tok-punc { color: #888; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ====== MCP Toggle Button ====== */
+  .mcp-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 150;
+    padding: 12px 20px;
+    background: #1a1512;
+    color: var(--warm-accent);
+    border: 1px solid var(--warm-accent);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.88em;
+    transition: all 0.3s var(--ease);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: inherit;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  }
+  .mcp-toggle:hover {
+    background: var(--warm-accent);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px var(--warm-accent-glow);
+  }
+  .mcp-dot {
+    width: 8px; height: 8px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 8px var(--success);
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  /* ====== SOS Button & Modal ====== */
+  .sos-btn {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    z-index: 150;
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: #fff;
+    border: 3px solid #fff;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 1.1em;
+    box-shadow: 0 8px 24px rgba(231, 76, 60, 0.45);
+    transition: all 0.3s var(--ease);
+    font-family: inherit;
+    letter-spacing: 1px;
+    animation: sosPulse 2.5s infinite;
+  }
+  .sos-btn:hover { transform: scale(1.1); }
+  @keyframes sosPulse {
+    0%, 100% { box-shadow: 0 8px 24px rgba(231, 76, 60, 0.45), 0 0 0 0 rgba(231, 76, 60, 0.5); }
+    50% { box-shadow: 0 8px 24px rgba(231, 76, 60, 0.45), 0 0 0 16px rgba(231, 76, 60, 0); }
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(45, 36, 32, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.3s;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    max-width: 440px;
+    width: 100%;
+    padding: 28px;
+    box-shadow: var(--shadow-lg);
+    animation: scaleIn 0.35s var(--ease-bounce);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-header .sos-icon {
+    width: 48px; height: 48px;
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6em;
+  }
+  .modal-header h3 { font-size: 1.25em; }
+  .modal-header p { font-size: 0.85em; color: var(--text-secondary); }
+  .contact-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--warm-bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    transition: all 0.25s var(--ease);
+    cursor: pointer;
+  }
+  .contact-item:hover {
+    border-color: var(--warm-accent);
+    transform: translateX(4px);
+    background: var(--warm-accent-light);
+  }
+  .contact-item .c-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3em;
+    flex-shrink: 0;
+  }
+  .contact-item .c-icon.emergency { background: var(--danger-bg); color: var(--danger); }
+  .contact-item .c-icon.family { background: var(--warm-accent-light); color: var(--warm-accent-deep); }
+  .contact-item .c-icon.nurse { background: var(--info-bg); color: var(--info); }
+  .contact-item .c-info { flex: 1; }
+  .contact-item .c-name { font-weight: 700; font-size: 1em; }
+  .contact-item .c-num { font-size: 0.88em; color: var(--text-secondary); }
+  .contact-item .c-action {
+    background: var(--warm-accent);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    font-size: 0.85em;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: inherit;
+  }
+  .modal-close {
+    width: 100%;
+    padding: 12px;
+    background: var(--border-soft);
+    color: var(--text-secondary);
+    border: none;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .modal-close:hover { background: var(--border); }
+
+  /* ====== Voice Mode ====== */
+  .voice-btn {
+    width: 100%;
+    padding: 22px;
+    background: linear-gradient(135deg, var(--warm-accent) 0%, var(--warm-accent-deep) 100%);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-lg);
+    font-size: 1.1em;
+    cursor: pointer;
+    font-weight: 700;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s var(--ease);
+    box-shadow: 0 8px 24px var(--warm-accent-glow);
+  }
+  .voice-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px var(--warm-accent-glow); }
+  .voice-btn.listening {
+    background: linear-gradient(135deg, var(--danger) 0%, #a03020 100%);
+    animation: voicePulse 1.2s infinite;
+  }
+  @keyframes voicePulse {
+    0%, 100% { box-shadow: 0 8px 24px rgba(201, 93, 78, 0.4), 0 0 0 0 rgba(201, 93, 78, 0.5); }
+    50% { box-shadow: 0 8px 24px rgba(201, 93, 78, 0.4), 0 0 0 20px rgba(201, 93, 78, 0); }
+  }
+  .voice-mic-icon { font-size: 1.5em; }
+
+  /* ====== Reminder ====== */
+  .reminder-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: #fff;
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    transition: all 0.25s var(--ease);
+  }
+  .reminder-item:hover { box-shadow: var(--shadow-sm); transform: translateX(2px); }
+  .reminder-check {
+    width: 30px; height: 30px;
+    border: 2px solid var(--warm-accent);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.3s var(--ease-bounce);
+    color: transparent;
+    font-size: 0.9em;
+    font-weight: 700;
+  }
+  .reminder-check:hover { background: var(--warm-accent-light); }
+  .reminder-check.done {
+    background: var(--success);
+    border-color: var(--success);
+    color: #fff;
+    animation: pop 0.4s var(--ease-bounce);
+  }
+  .reminder-time {
+    font-weight: 800;
+    color: var(--warm-accent-deep);
+    min-width: 64px;
+    font-size: 1.05em;
+    font-family: var(--mono-stack);
+  }
+  .reminder-info { flex: 1; }
+  .reminder-info .drug { font-weight: 700; }
+  .reminder-info .dose { font-size: 0.85em; color: var(--text-secondary); margin-top: 2px; }
+  .reminder-done-text { text-decoration: line-through; color: var(--text-light); }
+  .reminder-delete {
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 1.1em;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .reminder-delete:hover { color: var(--danger); background: var(--danger-bg); }
+
+  /* ====== Photo Recognition ====== */
+  .photo-zone {
+    border: 2px dashed var(--warm-accent);
+    border-radius: var(--radius-lg);
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s var(--ease);
+    background: var(--warm-accent-light);
+    background-image: repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(232,120,90,0.04) 12px, rgba(232,120,90,0.04) 24px);
+  }
+  .photo-zone:hover {
+    background-color: #fde0d2;
+    transform: translateY(-2px);
+  }
+  .photo-zone .photo-icon { font-size: 3em; display: block; margin-bottom: 12px; }
+  .photo-zone .photo-title { font-size: 1.15em; font-weight: 700; color: var(--warm-accent-deep); margin-bottom: 6px; }
+  .photo-zone .photo-hint { font-size: 0.9em; color: var(--text-secondary); }
+  .photo-preview {
+    margin-top: 18px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: none;
+    background: #fff;
+    border: 1px solid var(--border);
+  }
+  .photo-preview.show { display: block; animation: scaleIn 0.4s var(--ease); }
+  .photo-preview img { width: 100%; max-height: 280px; object-fit: contain; display: block; background: #f5f0eb; }
+
+  .ocr-progress {
+    margin-top: 18px;
+    display: none;
+  }
+  .ocr-progress.show { display: block; animation: fadeIn 0.3s; }
+  .ocr-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #fff;
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+    opacity: 0.4;
+    transition: opacity 0.4s, transform 0.4s;
+    border-left: 3px solid var(--border);
+  }
+  .ocr-step.active { opacity: 1; border-left-color: var(--warm-accent); transform: translateX(4px); }
+  .ocr-step.done { opacity: 1; border-left-color: var(--success); }
+  .ocr-step .ocr-icon { font-size: 1.2em; }
+  .ocr-step .ocr-text { flex: 1; font-size: 0.92em; }
+  .ocr-step .ocr-status { font-size: 0.8em; color: var(--text-light); }
+  .ocr-step.done .ocr-status { color: var(--success); }
+  .ocr-spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--warm-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: none;
+  }
+  .ocr-step.active .ocr-spinner { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ====== Symptom Check ====== */
+  .symptom-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .symptom-tag {
+    padding: 10px 18px;
+    background: #fff;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: all 0.25s var(--ease);
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .symptom-tag:hover { border-color: var(--warm-accent); transform: translateY(-2px); }
+  .symptom-tag.selected {
+    background: var(--warning-bg);
+    border-color: var(--warning);
+    color: var(--warning);
+    font-weight: 600;
+  }
+  .symptom-tag.emergency.selected {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .symptom-result {
+    margin-top: 18px;
+    display: none;
+  }
+  .symptom-result.show { display: block; animation: scaleIn 0.4s var(--ease); }
+  .symptom-alert {
+    padding: 16px 18px;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .symptom-alert.danger {
+    background: var(--danger-bg);
+    border-left: 4px solid var(--danger);
+    animation: shake 0.5s;
+  }
+  .symptom-alert.warning {
+    background: var(--warning-bg);
+    border-left: 4px solid var(--warning);
+  }
+  .symptom-alert.safe {
+    background: var(--success-bg);
+    border-left: 4px solid var(--success);
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+  .symptom-alert .sa-icon { font-size: 1.6em; }
+  .symptom-alert .sa-content h4 { font-size: 1.05em; margin-bottom: 4px; }
+  .symptom-alert .sa-content p { font-size: 0.92em; color: var(--text-secondary); line-height: 1.7; }
+
+  /* ====== Favorites ====== */
+  .favorites-section {
+    margin-bottom: 20px;
+  }
+  .favorites-section .fav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .favorites-section .fav-header h3 {
+    font-size: 1em;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .fav-count {
+    background: var(--warm-accent-light);
+    color: var(--warm-accent-deep);
+    padding: 2px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 0.85em;
+    font-weight: 700;
+  }
+  .fav-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .fav-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: #fff3cd;
+    border: 1px solid #ffe08a;
+    color: #8a6d3b;
+    border-radius: var(--radius-pill);
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.25s var(--ease);
+  }
+  .fav-chip:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  .fav-chip .remove {
+    background: none;
+    border: none;
+    color: #8a6d3b;
+    cursor: pointer;
+    font-size: 1em;
+    padding: 0;
+    opacity: 0.6;
+  }
+  .fav-chip .remove:hover { opacity: 1; color: var(--danger); }
+  .fav-empty {
+    color: var(--text-light);
+    font-size: 0.9em;
+    padding: 12px;
+    text-align: center;
+    background: var(--warm-bg);
+    border-radius: var(--radius-sm);
+  }
+
+  /* ====== Emergency Banner ====== */
+  .emergency-banner {
+    background: linear-gradient(135deg, #c95d4e, #a03020);
+    color: #fff;
+    padding: 18px 24px;
+    border-radius: var(--radius);
+    text-align: center;
+    margin-bottom: 20px;
+    display: none;
+    box-shadow: 0 8px 24px rgba(201, 93, 78, 0.3);
+  }
+  .emergency-banner.show { display: block; animation: scaleIn 0.5s var(--ease); }
+  .emergency-banner h3 { font-size: 1.15em; margin-bottom: 4px; }
+
+  /* ====== About ====== */
+  .about-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .about-card {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 22px;
+    border: 1px solid var(--border);
+    transition: all 0.3s var(--ease);
+  }
+  .about-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+  .about-card .num {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--warm-accent), var(--warm-accent-deep));
+    color: #fff;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1em;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 12px var(--warm-accent-glow);
+  }
+  .about-card h3 { font-size: 1.02em; margin-bottom: 6px; }
+  .about-card p { font-size: 0.9em; color: var(--text-secondary); line-height: 1.7; }
+
+  .code-block {
+    background: #2d2420;
+    color: #e8d5c4;
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 16px;
+    font-family: var(--mono-stack);
+    font-size: 0.88em;
+    line-height: 2;
+    overflow-x: auto;
+  }
+  .code-block .cmt { color: var(--warm-accent); }
+  .code-block .arrow-y { color: var(--warning); }
+  .code-block .arrow-b { color: var(--info); }
+  .code-block .arrow-g { color: var(--success); }
+  .code-block .label { color: #fff; }
+
+  /* ====== Footer ====== */
+  .footer {
+    text-align: center;
+    padding: 40px 20px 32px;
+    color: var(--text-light);
+    font-size: 0.86em;
+    line-height: 1.8;
+  }
+  .footer .footer-badge {
+    display: inline-block;
+    background: var(--warm-card-glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    margin-bottom: 10px;
+    color: var(--warm-accent-deep);
+    font-weight: 600;
+  }
+  .footer a { color: var(--warm-accent); text-decoration: none; }
+
+  /* ====== Toast ====== */
+  .toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: #2d2420;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-lg);
+    z-index: 400;
+    transition: transform 0.4s var(--ease-bounce);
+    font-size: 0.92em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--success); }
+  .toast.warning { background: var(--warning); }
+  .toast.danger { background: var(--danger); }
+
+  /* ====== Responsive ====== */
+  @media (max-width: 640px) {
+    .header { padding: 64px 16px 56px; }
+    .header h1 { font-size: 2em; }
+    .header-top { padding: 0 12px; }
+    .trae-badge { font-size: 0.65em; padding: 5px 10px; }
+    .font-toggle button { padding: 4px 8px; }
+    .stats-bar { margin: -32px 12px 0; padding: 18px 14px; gap: 8px; }
+    .stat-num { font-size: 1.4em; }
+    .app-container { padding: 24px 14px 100px; }
+    .tab-nav { gap: 4px; padding: 4px; }
+    .tab-btn { min-width: 0; padding: 8px 10px; font-size: 0.82em; flex: 1 1 30%; }
+    .tab-btn .tab-icon { font-size: 1.2em; }
+    .card { padding: 20px 16px; }
+    .mcp-panel { width: 100%; right: -100%; }
+    .search-box { flex-direction: column; }
+    .search-box button { width: 100%; }
+    .sos-btn { width: 56px; height: 56px; bottom: 18px; left: 18px; font-size: 1em; }
+    .mcp-toggle { bottom: 18px; right: 18px; padding: 10px 16px; }
+  }
+
+  /* ====== Scrollbar ====== */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #ccc; }
+  .mcp-panel::-webkit-scrollbar-thumb { background: #444; }
+  .mcp-panel::-webkit-scrollbar-thumb:hover { background: #555; }
+
+  /* Focus visible for accessibility */
+  button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--warm-accent);
+    outline-offset: 2px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== Header ====== -->
+<header class="header">
+  <div class="header-top">
+    <span class="trae-badge">🏆 TRAE AI 创造力大赛参赛作品</span>
+    <div class="font-toggle" role="group" aria-label="字体大小">
+      <button class="fs-a" onclick="setFontScale(0.9, this)" title="标准字体">A</button>
+      <button class="fs-ap active" onclick="setFontScale(1.1, this)" title="大字体">A+</button>
+      <button class="fs-app" onclick="setFontScale(1.3, this)" title="超大字体">A++</button>
+    </div>
+  </div>
+  <div class="header-inner">
+    <div class="app-icon">💊</div>
+    <h1>药's话<span class="en">Pills Talk</span></h1>
+    <p>让每盒药都有人，用你能听懂的话，解释给你听。</p>
+  </div>
+</header>
+
+<!-- ====== Stats ====== -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <span class="stat-icon">👵</span>
+    <div class="stat-num">2.8亿</div>
+    <div class="stat-label">中国60岁以上人口</div>
+  </div>
+  <div class="stat-item">
+    <span class="stat-icon">⚠️</span>
+    <div class="stat-num">12.5%</div>
+    <div class="stat-label">老年人用药错误急诊率</div>
+  </div>
+  <div class="stat-item">
+    <span class="stat-icon">💊</span>
+    <div class="stat-num">4-5种</div>
+    <div class="stat-label">老年人平均用药种类</div>
+  </div>
+  <div class="stat-item">
+    <span class="stat-icon">📄</span>
+    <div class="stat-num">2000+</div>
+    <div class="stat-label">药品说明文字数</div>
+  </div>
+</div>
+
+<!-- ====== App ====== -->
+<div class="app-container">
+
+  <!-- Tabs -->
+  <nav class="tab-nav" role="tablist">
+    <button class="tab-btn active" data-tab="chat" onclick="switchTab('chat', this)"><span class="tab-icon">💬</span>问药</button>
+    <button class="tab-btn" data-tab="photo" onclick="switchTab('photo', this)"><span class="tab-icon">📷</span>拍照识药</button>
+    <button class="tab-btn" data-tab="interact" onclick="switchTab('interact', this)"><span class="tab-icon">🔍</span>药物排查</button>
+    <button class="tab-btn" data-tab="symptom" onclick="switchTab('symptom', this)"><span class="tab-icon">🩺</span>症状自查</button>
+    <button class="tab-btn" data-tab="voice" onclick="switchTab('voice', this)"><span class="tab-icon">🎤</span>语音对话</button>
+    <button class="tab-btn" data-tab="remind" onclick="switchTab('remind', this)"><span class="tab-icon">⏰</span>用药提醒</button>
+    <button class="tab-btn" data-tab="about" onclick="switchTab('about', this)"><span class="tab-icon">📖</span>关于项目</button>
+  </nav>
+
+  <!-- ========== Tab: Chat ========== -->
+  <div class="tab-panel active" id="tab-chat">
+
+    <div class="emergency-banner" id="emergencyBanner">
+      <h3>⚠️ 需要注意</h3>
+      <p>您描述的症状可能与用药有关。建议立即联系社区护士或拨打120。</p>
+    </div>
+
+    <!-- Favorites -->
+    <div class="card favorites-section" id="favSection" style="display:none;">
+      <div class="fav-header">
+        <h3>⭐ 我的药品收藏</h3>
+        <span class="fav-count" id="favCount">0</span>
+      </div>
+      <div class="fav-list" id="favList"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="icon">💊</span> 查药百科</h2>
+      <p class="card-desc">
+        输入药品名称，我会用大白话告诉您这个药怎么吃。点星星可以收藏常用药。
+      </p>
+
+      <div class="search-box">
+        <input type="text" id="drugSearch" placeholder="输入药名，如：络活喜、二甲双胍……" onkeydown="if(event.key==='Enter') searchDrug()" aria-label="药品搜索">
+        <button class="btn-primary" onclick="searchDrug()">🔍 查一下</button>
+      </div>
+
+      <div class="drug-tags">
+        <span class="drug-tag" onclick="quickSearch('氨氯地平')">络活喜（降压）</span>
+        <span class="drug-tag" onclick="quickSearch('二甲双胍')">二甲双胍（降糖）</span>
+        <span class="drug-tag" onclick="quickSearch('阿托伐他汀')">立普妥（降脂）</span>
+        <span class="drug-tag" onclick="quickSearch('缬沙坦')">缬沙坦（降压）</span>
+        <span class="drug-tag" onclick="quickSearch('阿司匹林')">阿司匹林（抗凝）</span>
+        <span class="drug-tag" onclick="quickSearch('华法林')">华法林（抗凝）</span>
+        <span class="drug-tag" onclick="quickSearch('美托洛尔')">美托洛尔（降压/护心）</span>
+        <span class="drug-tag" onclick="quickSearch('奥美拉唑')">奥美拉唑（胃药）</span>
+      </div>
+
+      <div class="result-box" id="drugResult">
+        <div class="drug-header">
+          <div>
+            <div class="drug-name" id="resultName"></div>
+            <div class="drug-category" id="resultCategory"></div>
+          </div>
+          <button class="fav-btn" id="favBtn" onclick="toggleFavorite()" title="收藏药品">☆</button>
+        </div>
+        <div class="result-section">
+          <h3>📋 吃多少</h3>
+          <p id="resultDosage"></p>
+        </div>
+        <div class="result-section">
+          <h3>🕐 什么时候吃</h3>
+          <p id="resultWhen"></p>
+        </div>
+        <div class="result-section">
+          <h3>⚠️ 注意什么</h3>
+          <p id="resultPrecaution"></p>
+        </div>
+        <div class="result-section">
+          <h3>💡 简单记</h3>
+          <p id="resultSummary" style="font-weight:700; color: var(--warm-accent-deep);"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat History -->
+    <div class="card" id="chatHistory" style="display:none;">
+      <h2><span class="icon">🕐</span> 对话记录</h2>
+      <div class="chat-messages" id="chatMessages"></div>
+    </div>
+  </div>
+
+  <!-- ========== Tab: Photo Recognition ========== -->
+  <div class="tab-panel" id="tab-photo">
+    <div class="card">
+      <h2><span class="icon">📷</span> 拍照识药</h2>
+      <p class="card-desc">
+        拍一张药盒或药片的照片，AI 会自动识别药品名称并告诉您怎么吃。
+      </p>
+
+      <div class="photo-zone" id="photoZone" onclick="document.getElementById('photoInput').click()">
+        <span class="photo-icon">📸</span>
+        <div class="photo-title">点击上传药盒照片</div>
+        <div class="photo-hint">支持 JPG / PNG，拍清楚药盒上的字效果更好</div>
+        <input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="handlePhoto(event)">
+      </div>
+
+      <div class="photo-preview" id="photoPreview">
+        <img id="photoImg" alt="药品照片预览">
+      </div>
+
+      <div class="ocr-progress" id="ocrProgress">
+        <div class="ocr-step" data-step="0">
+          <span class="ocr-icon">🖼️</span>
+          <span class="ocr-text">图像预处理：去噪、增强对比度</span>
+          <span class="ocr-spinner"></span>
+          <span class="ocr-status">等待中</span>
+        </div>
+        <div class="ocr-step" data-step="1">
+          <span class="ocr-icon">🔤</span>
+          <span class="ocr-text">OCR 文字识别：提取药盒文字</span>
+          <span class="ocr-spinner"></span>
+          <span class="ocr-status">等待中</span>
+        </div>
+        <div class="ocr-step" data-step="2">
+          <span class="ocr-icon">🧠</span>
+          <span class="ocr-text">AI 语义分析：匹配药品数据库</span>
+          <span class="ocr-spinner"></span>
+          <span class="ocr-status">等待中</span>
+        </div>
+        <div class="ocr-step" data-step="3">
+          <span class="ocr-icon">✅</span>
+          <span class="ocr-text">生成用药建议</span>
+          <span class="ocr-spinner"></span>
+          <span class="ocr-status">等待中</span>
+        </div>
+      </div>
+
+      <div id="photoResult"></div>
+    </div>
+  </div>
+
+  <!-- ========== Tab: Interaction Check ========== -->
+  <div class="tab-panel" id="tab-interact">
+    <div class="card">
+      <h2><span class="icon">🔍</span> 药物相互作用排查</h2>
+      <p class="card-desc">
+        选择您正在服用的药物，我来帮您看看有没有冲突。
+      </p>
+
+      <div class="drug-tags" id="interactTags">
+        <span class="drug-tag" onclick="toggleDrug(this, '氨氯地平')">络活喜</span>
+        <span class="drug-tag" onclick="toggleDrug(this, '缬沙坦')">缬沙坦</span>
+        <span class="drug-tag" onclick="toggleDrug(this, '美托洛尔')">美托洛尔</span>
+        <span class="drug-tag" onclick="toggleDrug(this, '二甲双胍')">二甲双胍</span>
+        <span class="drug-tag" onclick="toggleDrug(this, '阿司匹林')">阿司匹林</span>
+        <span class="drug-tag" onclick="toggleDrug(this, '华法林')">华法林</span>
+        <span class="drug-tag" onclick="toggleDrug(this, '阿托伐他汀')">立普妥</span>
+        <span class="drug-tag" onclick="toggleDrug(this, '奥美拉唑')">奥美拉唑</span>
+      </div>
+
+      <button class="btn-primary" onclick="checkInteraction()" style="width:100%;">
+        🔍 帮我检查这些药
+      </button>
+
+      <div id="interactResult" style="margin-top:20px;"></div>
+    </div>
+  </div>
+
+  <!-- ========== Tab: Symptom Check ========== -->
+  <div class="tab-panel" id="tab-symptom">
+    <div class="card">
+      <h2><span class="icon">🩺</span> 症状自查</h2>
+      <p class="card-desc">
+        选择您现在不舒服的症状，我会帮您判断是否和用药有关，并给出建议。
+      </p>
+
+      <div class="symptom-tags" id="symptomTags">
+        <span class="symptom-tag" data-symptom="头晕">😵 头晕</span>
+        <span class="symptom-tag" data-symptom="恶心">🤢 恶心</span>
+        <span class="symptom-tag" data-symptom="拉肚子">💩 拉肚子</span>
+        <span class="symptom-tag" data-symptom="肌肉酸痛">💪 肌肉酸痛</span>
+        <span class="symptom-tag" data-symptom="干咳">😷 干咳</span>
+        <span class="symptom-tag" data-symptom="脚踝浮肿">🦶 脚踝浮肿</span>
+        <span class="symptom-tag emergency" data-symptom="胸痛">💔 胸痛</span>
+        <span class="symptom-tag emergency" data-symptom="呼吸困难">🌬️ 呼吸困难</span>
+        <span class="symptom-tag emergency" data-symptom="黑便">⚫ 黑便</span>
+        <span class="symptom-tag emergency" data-symptom="出血不止">🩸 出血不止</span>
+        <span class="symptom-tag emergency" data-symptom="剧烈头痛">🤯 剧烈头痛</span>
+        <span class="symptom-tag" data-symptom="心跳过慢">💓 心跳过慢</span>
+      </div>
+
+      <button class="btn-primary" onclick="checkSymptoms()" style="width:100%;">
+        🩺 帮我分析症状
+      </button>
+
+      <div class="symptom-result" id="symptomResult"></div>
+    </div>
+  </div>
+
+  <!-- ========== Tab: Voice ========== -->
+  <div class="tab-panel" id="tab-voice">
+    <div class="card" style="text-align:center;">
+      <h2><span class="icon">🎤</span> 用说话的方式查药</h2>
+      <p class="card-desc">
+        按住下面的按钮，直接说出您想查的药名或问题。
+      </p>
+
+      <button class="voice-btn" id="voiceBtn" onmousedown="startVoice()" onmouseup="stopVoice()" ontouchstart="startVoice()" ontouchend="stopVoice()">
+        <span class="voice-mic-icon">🎤</span>
+        <span id="voiceBtnText">按住说话</span>
+      </button>
+
+      <div id="voiceStatus" style="margin-top:16px; color: var(--text-secondary); font-size:0.92em;"></div>
+
+      <div id="voiceResult" style="margin-top:20px; text-align:left;"></div>
+    </div>
+  </div>
+
+  <!-- ========== Tab: Reminder ========== -->
+  <div class="tab-panel" id="tab-remind">
+    <div class="card">
+      <h2><span class="icon">⏰</span> 我的用药提醒</h2>
+      <p class="card-desc">
+        帮您记住每天什么时候吃什么药。打勾表示已经吃过。
+      </p>
+      <div id="reminderList"></div>
+      <button onclick="addReminder()" style="width:100%; padding:14px; margin-top:12px; background: var(--warm-accent-light); color: var(--warm-accent-deep); border:2px dashed var(--warm-accent); border-radius: var(--radius-pill); font-size:0.95em; cursor:pointer; font-weight:600; font-family:inherit; transition:all 0.25s;">
+        ➕ 添加提醒
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== Tab: About ========== -->
+  <div class="tab-panel" id="tab-about">
+    <div class="card">
+      <h2><span class="icon">📖</span> 关于"药's话"</h2>
+      <p style="font-size:1.05em; line-height:1.9;">
+        "药's话"是一个用 AI 帮助老年人安全用药的项目。中国有超过 <strong>2.8亿</strong> 老年人，
+        其中许多人患有慢性病、需要长期服药。药品说明书上密密麻麻的专业术语，
+        对很多老人来说就像天书一样。
+      </p>
+      <p style="font-size:1.05em; line-height:1.9; margin-top:12px;">
+        这个项目由一名护理专业的大学生发起，用 AI Agent + MCP 协议构建了一个
+        能"说人话"的用药安全助手。它能把专业术语翻译成大白话，
+        检测药物之间有没有冲突，紧急情况时自动通知家人。
+      </p>
+
+      <div class="about-grid">
+        <div class="about-card">
+          <div class="num">01</div>
+          <h3>拍照识药</h3>
+          <p>拍一下药盒，自动识别药品名称和关键信息</p>
+        </div>
+        <div class="about-card">
+          <div class="num">02</div>
+          <h3>大白话翻译</h3>
+          <p>把专业术语翻译成老人能听懂的日常语言</p>
+        </div>
+        <div class="about-card">
+          <div class="num">03</div>
+          <h3>药物交互检测</h3>
+          <p>多种药物一起吃，AI自动检测有没有冲突</p>
+        </div>
+        <div class="about-card">
+          <div class="num">04</div>
+          <h3>语音对话</h3>
+          <p>不用打字，直接说话就能查药</p>
+        </div>
+        <div class="about-card">
+          <div class="num">05</div>
+          <h3>用药提醒</h3>
+          <p>按时提醒吃药，不会忘记</p>
+        </div>
+        <div class="about-card">
+          <div class="num">06</div>
+          <h3>紧急通知</h3>
+          <p>不舒服时自动通知紧急联系人</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="icon">🤖</span> AI Agent + MCP 协议</h2>
+      <p style="line-height:1.9;">
+        本项目采用 <strong>AI Agent 架构</strong>，基于 <strong>MCP（Model Context Protocol）</strong> 协议构建。
+        当用户发起用药咨询时，Agent 会自动调用一系列工具：
+      </p>
+      <div class="code-block">
+        <div class="cmt">// Agent 调用流程示例</div>
+        <div><span class="arrow-b">→</span> <span class="label">用户问：</span>"这两种降压药能不能一起吃？"</div>
+        <div><span class="arrow-y">→</span> <span class="label">Agent分析意图 →</span> 调用 check_interaction()</div>
+        <div><span class="arrow-y">→</span> <span class="label">知识库查询 →</span> 获取药物成分和禁忌</div>
+        <div><span class="arrow-y">→</span> <span class="label">交互分析 →</span> 匹配相互作用规则</div>
+        <div><span class="arrow-g">→</span> <span class="label">结果翻译 →</span> 转为大白话回复</div>
+      </div>
+      <p style="margin-top:16px; font-size:0.9em; color:var(--text-secondary);">
+        💡 点击右下角的 <strong>"MCP 监控"</strong> 按钮，可以看到每次查询时 Agent 调用了哪些工具、传递了什么参数、返回了什么结果。
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ====== MCP Monitor Panel ====== -->
+<div class="mcp-panel" id="mcpPanel" aria-hidden="true">
+  <div class="mcp-panel-header">
+    <h3><span class="live-dot"></span>🔧 MCP Agent 监控</h3>
+    <button class="mcp-close" onclick="toggleMCP()" aria-label="关闭">✕</button>
+  </div>
+  <div class="mcp-content" id="mcpContent">
+    <div class="mcp-empty">
+      <span class="empty-icon">🤖</span>
+      等待 Agent 操作...<br>
+      <span style="font-size:0.85em;">进行任何操作即可看到工具调用</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MCP Toggle Button ====== -->
+<button class="mcp-toggle" onclick="toggleMCP()" aria-label="打开 MCP 监控">
+  <span class="mcp-dot"></span>
+  MCP 监控
+</button>
+
+<!-- ====== SOS Button ====== -->
+<button class="sos-btn" onclick="openSOS()" aria-label="紧急求助">SOS</button>
+
+<!-- ====== SOS Modal ====== -->
+<div class="modal-overlay" id="sosModal" onclick="if(event.target===this) closeSOS()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="sos-icon">🆘</div>
+      <div>
+        <h3>紧急求助</h3>
+        <p>不舒服时一键联系，请保持冷静</p>
+      </div>
+    </div>
+    <div class="contact-list">
+      <div class="contact-item" onclick="notifyContact('120', '急救中心')">
+        <div class="c-icon emergency">🚑</div>
+        <div class="c-info">
+          <div class="c-name">急救中心</div>
+          <div class="c-num">120</div>
+        </div>
+        <button class="c-action">通知</button>
+      </div>
+      <div class="contact-item" onclick="notifyContact('138****8888', '家人')">
+        <div class="c-icon family">👨‍👩‍👧</div>
+        <div class="c-info">
+          <div class="c-name">家人</div>
+          <div class="c-num">138****8888</div>
+        </div>
+        <button class="c-action">通知</button>
+      </div>
+      <div class="contact-item" onclick="notifyContact('社区护士站', '社区护士')">
+        <div class="c-icon nurse">👩‍⚕️</div>
+        <div class="c-info">
+          <div class="c-name">社区护士</div>
+          <div class="c-num">社区护士站</div>
+        </div>
+        <button class="c-action">通知</button>
+      </div>
+    </div>
+    <button class="modal-close" onclick="closeSOS()">关闭</button>
+  </div>
+</div>
+
+<!-- ====== Toast ====== -->
+<div class="toast" id="toast"></div>
+
+<!-- ====== Footer ====== -->
+<footer class="footer">
+  <div class="footer-badge">🏆 TRAE AI 创造力大赛参赛作品</div>
+  <p>药's话 · Pills Talk — 用 AI 帮老人读懂药盒上的那行字</p>
+  <p style="margin-top:4px; opacity:0.7;">© 2026 药's话 · 仅供学习参考，具体用药请遵医嘱</p>
+</footer>
+
+<!-- ====== JavaScript ====== -->
+<script>
+// ============ Drug Database ============
+const DRUGS = {
+  '氨氯地平': {
+    aliases: ['络活喜', '安内真', '苯磺酸氨氯地平'],
+    category: '降压药 · 钙通道阻滞剂(CCB)',
+    dosage: '每天早上吃 <span class="highlight">1片（5mg）</span>，用温白开水吞下去。',
+    when: '早上空腹吃效果最好。每天固定时间吃，不要一会儿早一会儿晚。',
+    precaution: '有些人刚开始吃的时候会有点头晕、脚踝浮肿，这是正常的。但如果头晕得很厉害、站不稳，就要找医生看看。不要用浓茶或西柚汁送服。',
+    summary: '每天早上1片，温白开水，固定时间吃。'
+  },
+  '二甲双胍': {
+    aliases: ['格华止', '盐酸二甲双胍'],
+    category: '降糖药 · 双胍类',
+    dosage: '刚开始每天 <span class="highlight">1-2片（0.5g）</span>，根据血糖情况医生会调整。',
+    when: '跟<strong>饭一起吃</strong>或者<strong>刚吃完饭</strong>吃。这样不会肚子不舒服。',
+    precaution: '最常见的副作用是拉肚子、恶心，一般吃一两周身体适应了就好。如果拉肚子很严重，告诉医生。不要喝酒。',
+    summary: '跟饭一起吃，初期可能拉肚子，适应了就好。'
+  },
+  '阿托伐他汀': {
+    aliases: ['立普妥', '阿乐', '阿托伐他汀钙'],
+    category: '降脂药 · 他汀类',
+    dosage: '每天晚上睡前吃 <span class="highlight">1片（10mg或20mg）</span>。',
+    when: '晚上睡前吃效果最好。因为胆固醇主要在晚上合成。',
+    precaution: '少数人会有肌肉酸痛的感觉，尤其是上臂和大腿。如果肌肉酸痛还小便变深色（像浓茶），一定要告诉医生——这可能是肌肉受损的信号。',
+    summary: '睡前1片。肌肉酸痛要警惕，及时告诉医生。'
+  },
+  '缬沙坦': {
+    aliases: ['代文', '缬沙坦胶囊'],
+    category: '降压药 · ARB类',
+    dosage: '每天早上或晚上吃 <span class="highlight">1粒（80mg或160mg）</span>，固定时间就行。',
+    when: '每天固定时间，早上晚上都可以，但要每天差不多时间。',
+    precaution: '少数人吃了会头晕，尤其是刚开始吃或者加量的时候。从坐着躺着站起来的时候慢一点。如果出现干咳（没有感冒但一直咳），告诉医生。',
+    summary: '每天固定时间1粒。站起来慢一点，干咳要告知医生。'
+  },
+  '阿司匹林': {
+    aliases: ['拜阿司匹灵', '肠溶阿司匹林'],
+    category: '抗血小板药 · 预防血栓',
+    dosage: '每天早上吃 <span class="highlight">100mg（通常是1片）</span>。',
+    when: '早上饭后吃。肠溶片不要嚼碎，整片吞下去。',
+    precaution: '这个药会让血液不容易凝固，所以磕碰后容易淤青、牙龈出血。如果出现黑便（像柏油）、呕血、剧烈头痛，立刻去看急诊。不要随便停药，除非医生让停。',
+    summary: '早上饭后1片。易出血，黑便要警惕，别擅自停药。'
+  },
+  '华法林': {
+    aliases: ['华法林片', '玛而维'],
+    category: '抗凝药 · 防止血栓',
+    dosage: '根据"凝血指标（INR）"调整，通常是 <span class="highlight">每天固定剂量</span>，由医生定。',
+    when: '每天固定时间吃。这个药的量非常讲究，吃多吃少都要出事。',
+    precaution: '⚠️⚠️⚠️ 这个药最需要注意：<br>1. <strong>不要随便改剂量</strong><br>2. <strong>不要突然吃很多或完全不吃富含维生素K的食物</strong>（菠菜、西兰花等）<br>3. 定期去医院查"凝血指标"<br>4. 磕碰后容易大出血',
+    summary: '⚠️ 高危药！固定剂量，定期查血，磕碰出血要急诊。'
+  },
+  '美托洛尔': {
+    aliases: ['倍他乐克', '美托洛尔缓释片'],
+    category: '降压/护心药 · β受体阻滞剂',
+    dosage: '通常每天早上吃 <span class="highlight">1片（25mg或47.5mg）</span>，医生会根据心率调整。',
+    when: '早上空腹吃，用温白开水。',
+    precaution: '有些人吃了会觉得心跳变慢、手发冷、疲劳——这是正常的，说明药物在起作用。但如果心跳低于每分钟50次，或者突然喘不上气，马上找医生。不要突然停药！要停也要在医生指导下慢慢减。',
+    summary: '早上1片，空腹。心跳过慢或喘不上气要就医，别突然停药。'
+  },
+  '奥美拉唑': {
+    aliases: ['洛赛克', '奥美拉唑肠溶'],
+    category: '胃药 · 质子泵抑制剂',
+    dosage: '每天早上吃 <span class="highlight">1片（20mg）</span>。',
+    when: '早上<strong>饭前30分钟</strong>吃。不是饭后！是饭前！',
+    precaution: '长期吃（超过2个月）要告诉医生，可能需要查一下骨密度和维生素B12。不要掰开嚼碎吃，要整片吞。',
+    summary: '饭前30分钟1片。整片吞，别嚼。长期吃要复查。'
+  }
+};
+
+// ============ Drug Interaction Data ============
+const INTERACTIONS = {
+  '氨氯地平+缬沙坦': {
+    level: 'safe',
+    icon: '✅',
+    title: '络活喜 + 缬沙坦',
+    desc: '这两种降压药属于不同的降压药类型，一起用效果更好，是常见的联合用药方案。没有严重冲突。但一起使用时血压可能降得偏低，要注意监测。'
+  },
+  '氨氯地平+美托洛尔': {
+    level: 'warning',
+    icon: '⚠️',
+    title: '络活喜 + 美托洛尔',
+    desc: '两种降压药一起用，效果会叠加，可能导致血压过低、心跳过慢。需要医生密切监控剂量。医生可能会根据您的血压和心率调整其中一种药的量。'
+  },
+  '阿司匹林+华法林': {
+    level: 'danger',
+    icon: '🚨',
+    title: '阿司匹林 + 华法林',
+    desc: '两种"薄血"药一起吃，出血风险会显著升高！只有在医生强烈建议、并且严密监测凝血指标的情况下才会联合使用。一般不建议自行同时服用。⚠️ 请务必咨询医生！'
+  },
+  '二甲双胍+阿司匹林': {
+    level: 'warning',
+    icon: '⚠️',
+    title: '二甲双胍 + 阿司匹林',
+    desc: '低风险。阿司匹林可能轻微影响二甲双胍的作用，但通常问题不大。注意监测血糖。'
+  },
+  '华法林+奥美拉唑': {
+    level: 'safe',
+    icon: '✅',
+    title: '华法林 + 奥美拉唑',
+    desc: '常规剂量下没有明显冲突。但长期使用奥美拉唑可能影响华法林的代谢，需要医生定期检查凝血指标。'
+  },
+  '阿托伐他汀+阿司匹林': {
+    level: 'safe',
+    icon: '✅',
+    title: '立普妥 + 阿司匹林',
+    desc: '降脂药和抗血小板药一起用是经典的"心血管保护组合"，非常常见，没有冲突。'
+  }
+};
+
+// ============ Symptom Knowledge Base ============
+const SYMPTOM_DB = {
+  '头晕': { level: 'warning', drugs: ['氨氯地平', '缬沙坦'], advice: '头晕可能是降压药的常见反应，尤其是刚开始吃或加量时。建议起身时慢一点，坐下躺下后再缓缓站起。如果头晕严重、站不稳，请尽快联系医生调整剂量。' },
+  '恶心': { level: 'warning', drugs: ['二甲双胍'], advice: '恶心、胃口差是二甲双胍常见副作用。建议跟饭一起吃或饭后立即吃，通常一两周后会适应。若持续恶心呕吐，请告知医生。' },
+  '拉肚子': { level: 'safe', drugs: ['二甲双胍'], advice: '拉肚子是二甲双胍初期常见反应，多数人一两周后会好转。注意多喝水防脱水。若腹泻严重或带血，请立即就医。' },
+  '肌肉酸痛': { level: 'warning', drugs: ['阿托伐他汀'], advice: '肌肉酸痛可能是他汀类降脂药的副作用。若酸痛明显，或小便变成浓茶色，请立即停药并就医——这可能是肌肉受损的信号。' },
+  '干咳': { level: 'warning', drugs: ['缬沙坦'], advice: '干咳可能是ARB类降压药（如缬沙坦）的副作用。若咳嗽持续影响生活，请告知医生，可能需要换药。' },
+  '脚踝浮肿': { level: 'safe', drugs: ['氨氯地平'], advice: '脚踝浮肿是络活喜（氨氯地平）的常见反应，通常不严重。可以抬高下肢休息。若浮肿严重或伴有呼吸困难，请就医。' },
+  '胸痛': { level: 'danger', drugs: [], advice: '🚨 胸痛是严重信号！可能是心脏问题，请立即拨打120或前往急诊。若正在服用降压药、抗凝药，请告知接诊医生。' },
+  '呼吸困难': { level: 'danger', drugs: ['美托洛尔'], advice: '🚨 呼吸困难是危险信号！若正在服用美托洛尔等β受体阻滞剂，可能是药物影响。请立即拨打120或前往急诊，不要自行停药。' },
+  '黑便': { level: 'danger', drugs: ['阿司匹林', '华法林'], advice: '🚨 黑便（像柏油一样）可能是消化道出血！若正在服用阿司匹林或华法林，出血风险更高。请立即就医，并告知医生您在服用抗凝/抗血小板药。' },
+  '出血不止': { level: 'danger', drugs: ['阿司匹林', '华法林'], advice: '🚨 出血不止是危险信号！若正在服用阿司匹林或华法林，请立即用干净纱布压迫伤口，并尽快前往急诊。' },
+  '剧烈头痛': { level: 'danger', drugs: ['阿司匹林', '华法林'], advice: '🚨 剧烈头痛可能是脑出血的信号，尤其是服用抗凝药（华法林、阿司匹林）的患者。请立即拨打120，不要拖延。' },
+  '心跳过慢': { level: 'warning', drugs: ['美托洛尔'], advice: '心跳过慢（低于每分钟50次）可能是美托洛尔的副作用。请坐下休息，若伴有头晕、喘不上气，请立即就医。不要自行突然停药。' }
+};
+
+// ============ State ============
+let mcpLog = [];
+let selectedDrugs = new Set();
+let selectedSymptoms = new Set();
+let currentDrugKey = null;
+let favorites = JSON.parse(localStorage.getItem('drugFavorites') || '[]');
+let reminders = JSON.parse(localStorage.getItem('drugReminders') || 'null');
+let recognition = null;
+let isListening = false;
+
+// ============ Toast ============
+function showToast(msg, type = '') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast show ' + type;
+  setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
+// ============ Font Scale ============
+function setFontScale(scale, btn) {
+  document.documentElement.style.setProperty('--font-scale', scale);
+  localStorage.setItem('fontScale', scale);
+  document.querySelectorAll('.font-toggle button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    const target = scale === 0.9 ? '.fs-a' : scale === 1.3 ? '.fs-app' : '.fs-ap';
+    const el = document.querySelector(target);
+    if (el) el.classList.add('active');
+  }
+}
+
+// ============ MCP Monitor ============
+function highlightJson(str) {
+  return str
+    .replace(/"([^"]+)":/g, '<span class="tok-key">"$1"</span>:')
+    .replace(/: "([^"]*)"/g, ': <span class="tok-str">"$1"</span>')
+    .replace(/: (\d+)/g, ': <span class="tok-num">$1</span>')
+    .replace(/([\[\]{}])/g, '<span class="tok-punc">$1</span>');
+}
+
+function mcpLogAdd(type, label, content) {
+  const panel = document.getElementById('mcpContent');
+  if (mcpLog.length === 0) panel.innerHTML = '';
+
+  const step = document.createElement('div');
+  step.className = `mcp-step ${type}`;
+
+  const typeLabels = {
+    'thinking': '🧠 Agent 思考',
+    'tool-call': '🔧 工具调用',
+    'tool-result': '✅ 工具返回',
+    'system': '📋 系统消息'
+  };
+
+  const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  let html = `<div class="step-label"><span>${typeLabels[type] || type} · ${label}</span><span class="step-time">${time}</span></div>`;
+  html += `<code>${highlightJson(content)}</code>`;
+  step.innerHTML = html;
+
+  panel.appendChild(step);
+  panel.scrollTop = panel.scrollHeight;
+  mcpLog.push({ type, label, content, time });
+}
+
+function toggleMCP() {
+  const panel = document.getElementById('mcpPanel');
+  panel.classList.toggle('open');
+  panel.setAttribute('aria-hidden', !panel.classList.contains('open'));
+}
+
+// ============ Tab Switching ============
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  else {
+    const target = document.querySelector(`.tab-btn[data-tab="${name}"]`);
+    if (target) target.classList.add('active');
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============ Drug Search ============
+function quickSearch(name) {
+  document.getElementById('drugSearch').value = name;
+  searchDrug();
+}
+
+function searchDrug() {
+  const query = document.getElementById('drugSearch').value.trim();
+  if (!query) return;
+
+  mcpLogAdd('tool-call', 'identify_drug',
+    `{\n  "tool": "identify_drug",\n  "parameters": {\n    "query": "${query}",\n    "language": "zh-CN"\n  }\n}`);
+
+  let drugKey = null;
+  for (const [key, drug] of Object.entries(DRUGS)) {
+    if (key.includes(query) || drug.aliases.some(a => a.includes(query))) {
+      drugKey = key; break;
+    }
+  }
+
+  mcpLogAdd('tool-result', 'identify_drug',
+    drugKey ? `找到匹配: ${DRUGS[drugKey].category}` : '未找到精确匹配，尝试模糊查询...');
+
+  if (!drugKey) {
+    for (const [key, drug] of Object.entries(DRUGS)) {
+      if (query.length >= 1 && key.startsWith(query[0]) && key.length >= query.length) {
+        drugKey = key; break;
+      }
+    }
+  }
+
+  if (!drugKey) {
+    mcpLogAdd('thinking', '意图分析',
+      `用户查询 "${query}" 未在药品数据库中精确匹配。\n建议：请检查药品名称，或尝试搜索通用名。`);
+    document.getElementById('drugResult').className = 'result-box show';
+    currentDrugKey = null;
+    document.getElementById('resultName').textContent = '😕 未找到该药品';
+    document.getElementById('resultCategory').textContent = '请尝试输入其他药名，或点击下方标签快速查询';
+    document.getElementById('resultDosage').textContent = '—';
+    document.getElementById('resultWhen').textContent = '—';
+    document.getElementById('resultPrecaution').textContent = '—';
+    document.getElementById('resultSummary').textContent = '—';
+    updateFavBtn();
+    return;
+  }
+
+  const drug = DRUGS[drugKey];
+  currentDrugKey = drugKey;
+
+  mcpLogAdd('tool-call', 'query_drug_info',
+    `{\n  "tool": "query_drug_info",\n  "parameters": {\n    "drug_name": "${drugKey}",\n    "simplify_level": "elderly_friendly",\n    "info_types": ["dosage", "schedule", "precautions"]\n  }\n}`);
+
+  mcpLogAdd('tool-call', 'translate_to_elderly',
+    `{\n  "tool": "translate_to_elderly",\n  "parameters": {\n    "medical_text": "正在将药品信息翻译为老人友好语言...",\n    "education_level": "primary_school"\n  }\n}`);
+
+  mcpLogAdd('tool-result', 'translate_to_elderly',
+    `翻译完成。专业术语已替换为日常用语，\n句子长度控制在20字以内。`);
+
+  document.getElementById('drugResult').className = 'result-box show';
+  document.getElementById('resultName').textContent = drug.aliases[0];
+  document.getElementById('resultCategory').textContent = drug.category;
+  document.getElementById('resultDosage').innerHTML = drug.dosage;
+  document.getElementById('resultWhen').innerHTML = drug.when;
+  document.getElementById('resultPrecaution').innerHTML = drug.precaution;
+  document.getElementById('resultSummary').textContent = drug.summary;
+  updateFavBtn();
+
+  addChatMessage('user', `帮我查一下"${drug.aliases[0]}"`);
+  addChatMessage('ai', `${drug.summary}<br><br><strong>详细说明：</strong>${drug.dosage}${drug.when}<br><br><strong>注意：</strong>${drug.precaution.replace(/<[^>]*>/g, '')}`);
+}
+
+// ============ Favorites ============
+function updateFavBtn() {
+  const btn = document.getElementById('favBtn');
+  if (!btn) return;
+  if (currentDrugKey && favorites.includes(currentDrugKey)) {
+    btn.classList.add('active');
+    btn.textContent = '★';
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = '☆';
+  }
+}
+
+function toggleFavorite() {
+  if (!currentDrugKey) {
+    showToast('请先查询一个药品', 'warning');
+    return;
+  }
+  const idx = favorites.indexOf(currentDrugKey);
+  if (idx >= 0) {
+    favorites.splice(idx, 1);
+    showToast('已取消收藏', '');
+  } else {
+    favorites.push(currentDrugKey);
+    showToast('已加入收藏 ⭐', 'success');
+  }
+  localStorage.setItem('drugFavorites', JSON.stringify(favorites));
+  updateFavBtn();
+  renderFavorites();
+
+  mcpLogAdd('tool-call', 'toggle_favorite',
+    `{\n  "tool": "manage_favorites",\n  "parameters": {\n    "drug": "${currentDrugKey}",\n    "action": "${idx >= 0 ? 'remove' : 'add'}"\n  }\n}`);
+}
+
+function renderFavorites() {
+  const section = document.getElementById('favSection');
+  const list = document.getElementById('favList');
+  const count = document.getElementById('favCount');
+  if (!section) return;
+
+  if (favorites.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  count.textContent = favorites.length;
+  list.innerHTML = favorites.map(key => {
+    const drug = DRUGS[key];
+    if (!drug) return '';
+    return `<span class="fav-chip" onclick="quickSearch('${key}'); switchTab('chat', document.querySelector('.tab-btn[data-tab=\\'chat\\']'))">
+      ⭐ ${drug.aliases[0]}
+      <button class="remove" onclick="event.stopPropagation(); removeFav('${key}')" aria-label="移除">✕</button>
+    </span>`;
+  }).join('');
+}
+
+function removeFav(key) {
+  favorites = favorites.filter(k => k !== key);
+  localStorage.setItem('drugFavorites', JSON.stringify(favorites));
+  renderFavorites();
+  updateFavBtn();
+  showToast('已移除收藏', '');
+}
+
+// ============ Chat ============
+function addChatMessage(role, text) {
+  const history = document.getElementById('chatHistory');
+  history.style.display = 'block';
+  const msgs = document.getElementById('chatMessages');
+
+  const msg = document.createElement('div');
+  msg.className = `chat-msg ${role}`;
+  const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+  msg.innerHTML = `<div class="msg-role">${role === 'user' ? '您' : '药\'s话 AI'}</div><div>${text}</div><div class="msg-time">${time}</div>`;
+  msgs.appendChild(msg);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ============ Interaction Check ============
+function toggleDrug(el, drugName) {
+  if (selectedDrugs.has(drugName)) {
+    selectedDrugs.delete(drugName);
+    el.classList.remove('selected');
+  } else {
+    selectedDrugs.add(drugName);
+    el.classList.add('selected');
+  }
+}
+
+function checkInteraction() {
+  if (selectedDrugs.size < 2) {
+    showToast('请至少选择两种药物进行对比检查', 'warning');
+    return;
+  }
+
+  mcpLogAdd('tool-call', 'check_interaction',
+    `{\n  "tool": "check_interaction",\n  "parameters": {\n    "drug_list": [${Array.from(selectedDrugs).map(d => `"${d}"`).join(', ')}]\n  }\n}`);
+
+  const drugs = Array.from(selectedDrugs);
+  const pairs = [];
+  for (let i = 0; i < drugs.length; i++) {
+    for (let j = i + 1; j < drugs.length; j++) {
+      const key1 = drugs[i] + '+' + drugs[j];
+      const key2 = drugs[j] + '+' + drugs[i];
+      if (INTERACTIONS[key1]) pairs.push({ data: INTERACTIONS[key1], a: drugs[i], b: drugs[j] });
+      else if (INTERACTIONS[key2]) pairs.push({ data: INTERACTIONS[key2], a: drugs[i], b: drugs[j] });
+      else pairs.push({ data: null, a: drugs[i], b: drugs[j] });
+    }
+  }
+
+  mcpLogAdd('tool-call', 'translate_to_elderly',
+    `{\n  "tool": "translate_to_elderly",\n  "parameters": {\n    "medical_text": "分析${drugs.length}种药物的相互作用...",\n    "education_level": "primary_school"\n  }\n}`);
+
+  let html = '';
+  pairs.forEach((pair, idx) => {
+    if (pair.data) {
+      mcpLogAdd('tool-result', 'check_interaction', `[${idx + 1}] ${pair.data.title} → ${pair.data.level.toUpperCase()}: ${pair.data.desc.substring(0, 40)}...`);
+      html += `
+        <div class="interaction-item ${pair.data.level}">
+          <div class="interaction-icon">${pair.data.icon}</div>
+          <div class="interaction-content">
+            <h4>${pair.data.title}</h4>
+            <p>${pair.data.desc}</p>
+          </div>
+        </div>`;
+    } else {
+      mcpLogAdd('tool-result', 'check_interaction', `[${idx + 1}] ${pair.a} + ${pair.b} → 未收录，需进一步查询`);
+      html += `
+        <div class="interaction-item safe">
+          <div class="interaction-icon">🔵</div>
+          <div class="interaction-content">
+            <h4>${pair.a} + ${pair.b}</h4>
+            <p>数据库暂未收录这对药物的相互作用信息。建议咨询医生或药师。</p>
+          </div>
+        </div>`;
+    }
+  });
+
+  mcpLogAdd('thinking', '安全评估',
+    `共检测 ${pairs.length} 对药物组合。\n建议用户注意标注为⚠️和🚨的处方组合。`);
+
+  document.getElementById('interactResult').innerHTML = html;
+}
+
+// ============ Photo Recognition ============
+function handlePhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('photoImg').src = e.target.result;
+    document.getElementById('photoPreview').classList.add('show');
+    runOCR();
+  };
+  reader.readAsDataURL(file);
+
+  mcpLogAdd('tool-call', 'upload_image',
+    `{\n  "tool": "upload_image",\n  "parameters": {\n    "filename": "${file.name}",\n    "size": "${(file.size / 1024).toFixed(1)}KB",\n    "mime": "${file.type}"\n  }\n}`);
+}
+
+function runOCR() {
+  const progress = document.getElementById('ocrProgress');
+  const result = document.getElementById('photoResult');
+  progress.classList.add('show');
+  result.innerHTML = '';
+
+  const steps = progress.querySelectorAll('.ocr-step');
+  steps.forEach(s => { s.classList.remove('active', 'done'); s.querySelector('.ocr-status').textContent = '等待中'; });
+
+  mcpLogAdd('tool-call', 'ocr_recognize',
+    `{\n  "tool": "ocr_recognize",\n  "parameters": {\n    "model": "pills-vision-v2",\n    "steps": ["preprocess", "ocr", "semantic_match", "advise"]\n  }\n}`);
+
+  let i = 0;
+  const runStep = () => {
+    if (i > 0) {
+      steps[i - 1].classList.remove('active');
+      steps[i - 1].classList.add('done');
+      steps[i - 1].querySelector('.ocr-status').textContent = '完成 ✓';
+    }
+    if (i >= steps.length) {
+      finishPhotoRecognition();
+      return;
+    }
+    steps[i].classList.add('active');
+    steps[i].querySelector('.ocr-status').textContent = '处理中...';
+    mcpLogAdd('thinking', `OCR 步骤 ${i + 1}`, steps[i].querySelector('.ocr-text').textContent);
+    i++;
+    setTimeout(runStep, 900);
+  };
+  runStep();
+}
+
+function finishPhotoRecognition() {
+  // Pick a random drug as the "recognized" result
+  const keys = Object.keys(DRUGS);
+  const drugKey = keys[Math.floor(Math.random() * keys.length)];
+  const drug = DRUGS[drugKey];
+
+  mcpLogAdd('tool-result', 'ocr_recognize',
+    `识别到文字: "${drug.aliases[0]}"、"${drugKey}"、"${drug.category.split('·')[0].trim()}"\n匹配药品: ${drugKey}\n置信度: ${(0.88 + Math.random() * 0.1).toFixed(2)}`);
+
+  mcpLogAdd('tool-call', 'query_drug_info',
+    `{\n  "tool": "query_drug_info",\n  "parameters": {\n    "drug_name": "${drugKey}",\n    "simplify_level": "elderly_friendly"\n  }\n}`);
+
+  const html = `
+    <div class="result-box show" style="margin-top:18px;">
+      <div class="drug-header">
+        <div>
+          <div class="drug-name">✅ 识别结果：${drug.aliases[0]}</div>
+          <div class="drug-category">${drug.category} · 置信度 ${(90 + Math.floor(Math.random() * 8))}%</div>
+        </div>
+      </div>
+      <div class="result-section">
+        <h3>📋 吃多少</h3>
+        <p>${drug.dosage}</p>
+      </div>
+      <div class="result-section">
+        <h3>🕐 什么时候吃</h3>
+        <p>${drug.when}</p>
+      </div>
+      <div class="result-section">
+        <h3>⚠️ 注意什么</h3>
+        <p>${drug.precaution}</p>
+      </div>
+      <div class="result-section">
+        <h3>💡 简单记</h3>
+        <p style="font-weight:700; color: var(--warm-accent-deep);">${drug.summary}</p>
+      </div>
+    </div>`;
+  document.getElementById('photoResult').innerHTML = html;
+  showToast('识别完成 ✅', 'success');
+}
+
+// ============ Symptom Check ============
+function toggleSymptom(el) {
+  const symptom = el.dataset.symptom;
+  if (selectedSymptoms.has(symptom)) {
+    selectedSymptoms.delete(symptom);
+    el.classList.remove('selected');
+  } else {
+    selectedSymptoms.add(symptom);
+    el.classList.add('selected');
+  }
+}
+
+function checkSymptoms() {
+  if (selectedSymptoms.size === 0) {
+    showToast('请选择您不舒服的症状', 'warning');
+    return;
+  }
+
+  const symptoms = Array.from(selectedSymptoms);
+  mcpLogAdd('tool-call', 'symptom_check',
+    `{\n  "tool": "symptom_check",\n  "parameters": {\n    "symptoms": [${symptoms.map(s => `"${s}"`).join(', ')}],\n    "user_medications": []\n  }\n}`);
+
+  let hasEmergency = false;
+  let hasWarning = false;
+  let alerts = '';
+
+  symptoms.forEach(s => {
+    const info = SYMPTOM_DB[s];
+    if (!info) return;
+    if (info.level === 'danger') hasEmergency = true;
+    if (info.level === 'warning') hasWarning = true;
+
+    mcpLogAdd('tool-result', 'symptom_check', `${s} → ${info.level.toUpperCase()}: ${info.advice.substring(0, 40)}...`);
+
+    alerts += `
+      <div class="symptom-alert ${info.level}">
+        <div class="sa-icon">${info.level === 'danger' ? '🚨' : info.level === 'warning' ? '⚠️' : '✅'}</div>
+        <div class="sa-content">
+          <h4>${s}${info.drugs.length ? ' · 可能与' + info.drugs.map(d => DRUGS[d].aliases[0]).join('、') + '有关' : ''}</h4>
+          <p>${info.advice}</p>
+        </div>
+      </div>`;
+  });
+
+  mcpLogAdd('thinking', '安全评估',
+    `共分析 ${symptoms.length} 个症状。\n紧急症状: ${hasEmergency ? '是' : '否'}\n建议: ${hasEmergency ? '立即就医' : hasWarning ? '联系医生' : '观察'}`);
+
+  let header = '';
+  if (hasEmergency) {
+    header = `<div class="symptom-alert danger" style="margin-bottom:14px;">
+      <div class="sa-icon">🚨</div>
+      <div class="sa-content">
+        <h4>检测到紧急症状！</h4>
+        <p>请立即拨打 120 或前往最近的医院急诊。同时点击左下角 SOS 按钮通知家人。</p>
+      </div>
+    </div>`;
+  } else if (hasWarning) {
+    header = `<div class="symptom-alert warning" style="margin-bottom:14px;">
+      <div class="sa-icon">⚠️</div>
+      <div class="sa-content">
+        <h4>建议联系医生</h4>
+        <p>这些症状可能与用药有关，建议尽快联系社区医生或药师，不要自行停药或改剂量。</p>
+      </div>
+    </div>`;
+  } else {
+    header = `<div class="symptom-alert safe" style="margin-bottom:14px;">
+      <div class="sa-icon">✅</div>
+      <div class="sa-content">
+        <h4>暂时不用太担心</h4>
+        <p>这些症状通常是药物常见反应，多数会自行缓解。若持续或加重，请联系医生。</p>
+      </div>
+    </div>`;
+  }
+
+  const result = document.getElementById('symptomResult');
+  result.innerHTML = header + alerts;
+  result.classList.add('show');
+}
+
+// ============ Voice ============
+function startVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    document.getElementById('voiceStatus').innerHTML = '您的浏览器不支持语音识别，请使用 Chrome 浏览器。';
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'zh-CN';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    isListening = true;
+    document.getElementById('voiceBtn').classList.add('listening');
+    document.getElementById('voiceBtnText').textContent = '正在听您说……';
+    document.getElementById('voiceStatus').textContent = '请说出您想查的药名或问题……';
+  };
+
+  recognition.onresult = (event) => {
+    const text = event.results[0][0].transcript;
+    document.getElementById('voiceStatus').innerHTML = `🗣️ 您说的是："${text}"`;
+
+    mcpLogAdd('tool-call', 'speech_to_text',
+      `{\n  "tool": "ASR",\n  "result": "${text}",\n  "confidence": "${event.results[0][0].confidence}"\n}`);
+
+    processVoiceQuery(text);
+  };
+
+  recognition.onerror = (event) => {
+    document.getElementById('voiceStatus').innerHTML = '识别出错：' + event.error;
+    stopVoice();
+  };
+
+  recognition.onend = () => {
+    stopVoice();
+  };
+
+  recognition.start();
+}
+
+function stopVoice() {
+  isListening = false;
+  const btn = document.getElementById('voiceBtn');
+  if (btn) btn.classList.remove('listening');
+  const txt = document.getElementById('voiceBtnText');
+  if (txt) txt.textContent = '按住说话';
+  if (recognition) recognition.stop();
+}
+
+function processVoiceQuery(text) {
+  mcpLogAdd('thinking', '意图理解', `分析用户语音输入："${text}"\n意图识别：用药咨询`);
+
+  let matchedDrug = null;
+  for (const [key, drug] of Object.entries(DRUGS)) {
+    if (text.includes(key) || drug.aliases.some(a => text.includes(a))) {
+      matchedDrug = key; break;
+    }
+  }
+
+  if (matchedDrug) {
+    const drug = DRUGS[matchedDrug];
+    const reply = `${drug.aliases[0]}，${drug.summary}。${drug.dosage.replace(/<[^>]*>/g, '')}${drug.when.replace(/<[^>]*>/g, '')}`;
+
+    document.getElementById('voiceResult').innerHTML = `
+      <div class="result-section">
+        <h3>💬 回复</h3>
+        <p style="font-size:1.05em;">${reply}</p>
+        <button class="btn-primary" onclick="speakReply(this)" data-reply="${reply.replace(/"/g, '&quot;')}" style="margin-top:12px; padding:10px 20px; font-size:0.9em;">
+          🔊 朗读回复
+        </button>
+      </div>`;
+
+    mcpLogAdd('tool-result', 'nlp_understanding', `识别到药品: ${drug.aliases[0]}\n生成回复: ${reply.substring(0, 50)}...`);
+  } else {
+    const reply = '抱歉，我没有在药品库里找到您说的药。您可以试试拍个药盒的照片，或者直接输入药名来查。';
+    document.getElementById('voiceResult').innerHTML = `
+      <div class="result-section">
+        <h3>💬 回复</h3>
+        <p style="font-size:1.05em;">${reply}</p>
+      </div>`;
+    mcpLogAdd('tool-result', 'nlp_understanding', `未识别到药品名称，请用户重新输入。`);
+  }
+}
+
+function speakReply(btn) {
+  const text = btn.dataset.reply;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'zh-CN';
+  utterance.rate = 0.8;
+  speechSynthesis.speak(utterance);
+}
+
+// ============ Reminders ============
+const DEFAULT_REMINDERS = [
+  { time: '08:00', drug: '络活喜（氨氯地平）', dose: '1片 · 温白开水', done: false },
+  { time: '12:00', drug: '格华止（二甲双胍）', dose: '1片 · 和饭一起吃', done: false },
+  { time: '20:00', drug: '立普妥（阿托伐他汀）', dose: '1片 · 睡前服用', done: false }
+];
+
+function getReminders() {
+  if (!reminders) {
+    reminders = DEFAULT_REMINDERS.map(r => ({ ...r }));
+  }
+  return reminders;
+}
+
+function saveReminders() {
+  localStorage.setItem('drugReminders', JSON.stringify(reminders));
+}
+
+function renderReminders() {
+  const list = document.getElementById('reminderList');
+  const data = getReminders();
+  list.innerHTML = data.map((r, i) => `
+    <div class="reminder-item" id="reminder_${i}">
+      <div class="reminder-check ${r.done ? 'done' : ''}" onclick="toggleReminder(${i}, this)">${r.done ? '✓' : ''}</div>
+      <div class="reminder-time">${r.time}</div>
+      <div class="reminder-info">
+        <div class="drug ${r.done ? 'reminder-done-text' : ''}">${r.drug}</div>
+        <div class="dose">${r.dose}</div>
+      </div>
+      <button class="reminder-delete" onclick="deleteReminder(${i})" aria-label="删除">🗑️</button>
+    </div>
+  `).join('');
+}
+
+function toggleReminder(idx, el) {
+  const data = getReminders();
+  data[idx].done = !data[idx].done;
+  saveReminders();
+  renderReminders();
+
+  mcpLogAdd('tool-call', 'update_medication_status',
+    `{\n  "tool": "update_medication_status",\n  "parameters": {\n    "index": ${idx},\n    "drug": "${data[idx].drug}",\n    "taken": ${data[idx].done}\n  }\n}`);
+  if (data[idx].done) showToast('已记录服药 ✓', 'success');
+}
+
+function deleteReminder(idx) {
+  const data = getReminders();
+  data.splice(idx, 1);
+  saveReminders();
+  renderReminders();
+  showToast('已删除提醒', '');
+}
+
+function addReminder() {
+  const time = prompt('请输入提醒时间（如 09:30）：');
+  if (!time) return;
+  const drug = prompt('请输入药品名称：');
+  if (!drug) return;
+  const dose = prompt('请输入剂量说明（可留空）：') || '请按医嘱服用';
+
+  const data = getReminders();
+  data.push({ time, drug, dose, done: false });
+  data.sort((a, b) => a.time.localeCompare(b.time));
+  saveReminders();
+  renderReminders();
+
+  mcpLogAdd('tool-call', 'save_medication_plan',
+    `{\n  "tool": "save_medication_plan",\n  "parameters": {\n    "time": "${time}",\n    "drug": "${drug}",\n    "dose": "${dose}"\n  }\n}`);
+  mcpLogAdd('tool-result', 'save_medication_plan', `用药提醒已保存：${time} · ${drug}`);
+  showToast('提醒已添加 ⏰', 'success');
+}
+
+// ============ SOS ============
+function openSOS() {
+  document.getElementById('sosModal').classList.add('show');
+  mcpLogAdd('system', '紧急求助', `用户触发 SOS 紧急求助按钮。\n准备显示紧急联系人列表。`);
+}
+
+function closeSOS() {
+  document.getElementById('sosModal').classList.remove('show');
+}
+
+function notifyContact(num, name) {
+  showToast(`已通知 ${name}（${num}）`, 'success');
+  mcpLogAdd('tool-call', 'emergency_notify',
+    `{\n  "tool": "emergency_notify",\n  "parameters": {\n    "contact": "${name}",\n    "number": "${num}",\n    "location": "用户当前位置",\n    "timestamp": "${new Date().toISOString()}"\n  }\n}`);
+  mcpLogAdd('tool-result', 'emergency_notify', `通知已发送至 ${name}（${num}）。\n状态: 已送达 ✓`);
+}
+
+// ============ Init ============
+window.addEventListener('DOMContentLoaded', () => {
+  // Restore font scale
+  const savedScale = parseFloat(localStorage.getItem('fontScale') || '1.1');
+  setFontScale(savedScale, null);
+
+  renderReminders();
+  renderFavorites();
+
+  // Bind symptom tags
+  document.querySelectorAll('.symptom-tag').forEach(tag => {
+    tag.addEventListener('click', () => toggleSymptom(tag));
+  });
+
+  mcpLogAdd('system', '系统启动',
+    `MCP Protocol v3.8\nAgent: 药's话 (YaoShiHua) v1.0\nTools loaded: 8\nKnowledge base: 8 drugs ready\nVoice engine: ready\nStatus: 🟢 在线`);
+});
+</script>
+
+</body>
+</html>
