@@ -26,15 +26,17 @@
 
 **产品界面截图：**
 
-（请在这里插入首页截图 — 展示暖色渐变页头、统计栏、标签导航）
+![首页 — 暖色渐变页头、统计数据、功能导航](screenshots/01-homepage.png)
 
-（请在这里插入查药百科截图 — 展示药品查询结果和大白话说明）
+![查药百科 — 药品查询结果与大白话说明](screenshots/02-drug-search.png)
 
-（请在这里插入拍照识药截图 — 展示 OCR 识别进度动画和识别结果）
+![拍照识药 — OCR 识别流程模拟](screenshots/03-photo-recognition.png)
 
-（请在这里插入药物交互排查截图 — 展示三级安全提示卡片）
+![药物排查 — 相互作用三级安全提示](screenshots/04-interaction-check.png)
 
-（请在这里插入 MCP 监控面板截图 — 展示工具调用时间线和 JSON 参数）
+![症状自查 — 症状分析与紧急预警](screenshots/06-symptom-sos.png)
+
+![MCP 监控面板 — Agent 工具调用时间线与参数](screenshots/05-mcp-panel.png)
 
 ## 二、Demo 创作思路
 
@@ -48,7 +50,11 @@
 
 ## 三、Demo 体验地址
 
-**体验方式：交互式 HTML 文件**
+**GitHub 仓库：** https://github.com/Andy-cool-blue/yaoshua-pills-talk
+
+**在线预览（点击 Raw）：** https://github.com/Andy-cool-blue/yaoshua-pills-talk/blob/main/app/index.html
+
+**体验方式二：交互式 HTML 文件**
 
 本帖附件上传：`药s话-参赛作品.zip`
 
